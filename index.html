@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Northern State Health Watch — SRCS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet" />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* ===== RED CRESCENT COLOR PALETTE ===== */
+        :root {
+            --rc-red: #C8102E;
+            --rc-red-deep: #9A0B22;
+            --rc-red-light: #FCE8EB;
+            --rc-red-glow: rgba(200, 16, 46, 0.15);
+            --rc-navy: #1A2B4C;
+            --rc-navy-soft: #2C4068;
+            --rc-navy-light: #E9ECF2;
+            --rc-cream: #F9F6F0;
+            --rc-white: #FFFFFF;
+            --rc-gold: #C9A84C;
+            --rc-gold-light: #F5EDD4;
+            --rc-ink: #1A1A2E;
+            --rc-ink-soft: #4A4A6A;
+            --rc-line: #DCD6CC;
+            --rc-green: #2D7D46;
+            --rc-green-light: #E6F0E8;
+            --rc-amber: #B8860B;
+            --rc-amber-light: #FCF3E0;
+            --shadow: 0 2px 12px rgba(26, 43, 76, 0.10);
+            --radius: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--rc-cream);
+            color: var(--rc-ink);
+            -webkit-font-smoothing: antialiased;
+        }
+        .app {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 0 20px 20px;
+            transition: all 0.2s;
+        }
+        .app[dir="rtl"] {
+            direction: rtl;
+        }
+        .app[dir="rtl"] .brand-text,
+        .app[dir="rtl"] .coord-head,
+        .app[dir="rtl"] .field-label,
+        .app[dir="rtl"] .hint,
+        .app[dir="rtl"] .muted,
+        .app[dir="rtl"] .section-label,
+        .app[dir="rtl"] .detail-card h3,
+        .app[dir="rtl"] .stat .l,
+        .app[dir="rtl"] .feed-title,
+        .app[dir="rtl"] .feed-sub,
+        .app[dir="rtl"] .feed-detail,
+        .app[dir="rtl"] .kv .k,
+        .app[dir="rtl"] .kv .v,
+        .app[dir="rtl"] .empty-state,
+        .app[dir="rtl"] .report-meta,
+        .app[dir="rtl"] .leaflet-popup-content,
+        .app[dir="rtl"] .topbar .brand-text p,
+        .app[dir="rtl"] .topbar .brand-text h1,
+        .app[dir="rtl"] .footer-text {
+            text-align: right;
+        }
+        .app[dir="rtl"] .pill-row,
+        .app[dir="rtl"] .severity-row,
+        .app[dir="rtl"] .filter-row,
+        .app[dir="rtl"] .feed-actions,
+        .app[dir="rtl"] .topbar {
+            flex-direction: row-reverse;
+        }
+        .app[dir="rtl"] .brand {
+            flex-direction: row-reverse;
+        }
+        .app[dir="rtl"] .feed-item {
+            flex-direction: row-reverse;
+        }
+        .app[dir="rtl"] .kv {
+            flex-direction: row-reverse;
+        }
+        .app[dir="rtl"] .kv .v {
+            text-align: left;
+        }
+        .app[dir="rtl"] .status-tag {
+            margin-right: 8px;
+        }
+        .app[dir="rtl"] .report-row {
+            flex-direction: row-reverse;
+        }
+        .app[dir="rtl"] .report-row .report-meta {
+            text-align: right;
+        }
+        .app[dir="rtl"] .leaflet-popup {
+            direction: ltr;
+        }
+        .app[dir="rtl"] .leaflet-popup-content {
+            direction: rtl;
+            text-align: right;
+        }
+        .app[dir="rtl"] .footer {
+            text-align: center !important;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 0 16px;
+            border-bottom: 2px solid var(--rc-red);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .brand img {
+            height: 44px;
+            width: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(200, 16, 46, 0.30);
+        }
+        .brand-text h1 {
+            font-family: 'Source Serif 4', serif;
+            font-weight: 600;
+            font-size: 20px;
+            margin: 0;
+            line-height: 1.2;
+            color: var(--rc-navy);
+        }
+        .brand-text p {
+            margin: 2px 0 0;
+            font-size: 12.5px;
+            color: var(--rc-ink-soft);
+            letter-spacing: 0.02em;
+        }
+        .brand-text p span {
+            color: var(--rc-red);
+            font-weight: 600;
+        }
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .lang-toggle {
+            display: flex;
+            gap: 2px;
+            background: var(--rc-navy-light);
+            padding: 3px;
+            border-radius: 10px;
+            border: 1px solid var(--rc-line);
+        }
+        .lang-toggle button {
+            border: none;
+            background: transparent;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--rc-ink-soft);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .lang-toggle button.active {
+            background: var(--rc-white);
+            color: var(--rc-navy);
+            box-shadow: var(--shadow);
+        }
+        .lang-toggle button:hover:not(.active) {
+            color: var(--rc-navy);
+        }
+        .role-switch {
+            display: flex;
+            gap: 4px;
+            background: var(--rc-navy-light);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--rc-line);
+        }
+        .role-switch button {
+            border: none;
+            background: transparent;
+            padding: 8px 18px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--rc-ink-soft);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .role-switch button.active {
+            background: var(--rc-white);
+            color: var(--rc-navy);
+            box-shadow: var(--shadow);
+        }
+        .role-switch button:hover:not(.active) {
+            color: var(--rc-navy);
+        }
+
+        /* ===== VIEW TOGGLE ===== */
+        .view {
+            display: none;
+            animation: fadeUp 0.25s ease;
+        }
+        .view.active {
+            display: block;
+        }
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== SHARED ===== */
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--rc-ink-soft);
+            margin: 0 0 12px;
+        }
+        .card {
+            background: var(--rc-white);
+            border: 1px solid var(--rc-line);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            box-shadow: var(--shadow);
+        }
+        .muted {
+            color: var(--rc-ink-soft);
+        }
+        select,
+        input[type="text"],
+        input[type="date"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--rc-ink);
+            background: var(--rc-white);
+            border: 1px solid var(--rc-line);
+            border-radius: 10px;
+            padding: 11px 14px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        select:focus,
+        input:focus,
+        textarea:focus {
+            border-color: var(--rc-red);
+            box-shadow: 0 0 0 3px var(--rc-red-glow);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.5;
+        }
+        label.field-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--rc-navy);
+            margin-bottom: 6px;
+        }
+        .field {
+            margin-bottom: 18px;
+        }
+        .hint {
+            font-size: 12px;
+            color: var(--rc-ink-soft);
+            margin-top: 6px;
+        }
+
+        /* ===== COORDINATOR VIEW ===== */
+        .coord-wrap {
+            max-width: 580px;
+            margin: 0 auto;
+        }
+        .coord-head h2 {
+            font-family: 'Source Serif 4', serif;
+            font-size: 24px;
+            margin: 0 0 4px;
+            font-weight: 600;
+            color: var(--rc-navy);
+        }
+        .coord-head h2 em {
+            color: var(--rc-red);
+            font-style: normal;
+        }
+        .coord-head .muted {
+            font-size: 14px;
+        }
+
+        .pill-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pill {
+            border: 1px solid var(--rc-line);
+            background: var(--rc-white);
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--rc-ink-soft);
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .pill:hover {
+            border-color: var(--rc-navy-soft);
+            color: var(--rc-navy);
+        }
+        .pill.active {
+            border-color: var(--rc-red);
+            background: var(--rc-red-light);
+            color: var(--rc-red-deep);
+        }
+        .pill.danger.active {
+            border-color: var(--rc-red);
+            background: var(--rc-red-light);
+            color: var(--rc-red-deep);
+        }
+        .severity-row {
+            display: flex;
+            gap: 8px;
+        }
+        .severity-row .pill {
+            flex: 1;
+            text-align: center;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--rc-red);
+            color: var(--rc-white);
+            border: none;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .submit-btn:hover {
+            background: var(--rc-red-deep);
+        }
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+        .submit-btn:disabled {
+            background: var(--rc-line);
+            color: var(--rc-ink-soft);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success-banner {
+            display: none;
+            background: var(--rc-green-light);
+            border: 1px solid var(--rc-green);
+            color: var(--rc-green);
+            border-radius: 10px;
+            padding: 13px 16px;
+            font-size: 13.5px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            align-items: center;
+            gap: 10px;
+        }
+        .success-banner.show {
+            display: flex;
+        }
+        .success-banner .check {
+            font-size: 18px;
+        }
+
+        .my-reports {
+            margin-top: 32px;
+        }
+        .report-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 13px 0;
+            border-bottom: 1px solid var(--rc-line);
+            gap: 12px;
+        }
+        .report-row:last-child {
+            border-bottom: none;
+        }
+        .report-meta {
+            font-size: 12px;
+            color: var(--rc-ink-soft);
+            margin-top: 3px;
+        }
+        .status-tag {
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            flex-shrink: 0;
+        }
+        .status-open {
+            background: var(--rc-amber-light);
+            color: var(--rc-amber);
+        }
+        .status-progress {
+            background: var(--rc-navy-light);
+            color: var(--rc-navy-soft);
+        }
+        .status-resolved {
+            background: var(--rc-green-light);
+            color: var(--rc-green);
+        }
+
+        /* ===== DIRECTOR VIEW — MAP & DASHBOARD ===== */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .stat {
+            background: var(--rc-white);
+            border: 1px solid var(--rc-line);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            box-shadow: var(--shadow);
+        }
+        .stat .n {
+            font-size: 30px;
+            font-weight: 600;
+            font-family: 'Source Serif 4', serif;
+            line-height: 1;
+            color: var(--rc-navy);
+        }
+        .stat .l {
+            font-size: 12px;
+            color: var(--rc-ink-soft);
+            margin-top: 6px;
+        }
+        .stat.alert .n {
+            color: var(--rc-red);
+        }
+
+        /* ===== MAP ===== */
+        .map-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 26px;
+        }
+        @media (max-width: 820px) {
+            .map-section {
+                grid-template-columns: 1fr;
+            }
+            .dash-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .panel-row {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        .map-wrapper {
+            background: var(--rc-white);
+            border: 1px solid var(--rc-line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            position: relative;
+            min-height: 420px;
+        }
+        .map-wrapper #map {
+            height: 420px;
+            width: 100%;
+            background: #FCFAF7;
+        }
+        .map-wrapper .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: 600;
+            color: var(--rc-ink-soft);
+            background: rgba(255, 255, 255, 0.85);
+            padding: 12px 24px;
+            border-radius: 40px;
+            border: 1px solid var(--rc-line);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .map-wrapper .map-loading.hidden {
+            opacity: 0;
+        }
+
+        .marker-ok {
+            background: var(--rc-green);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .marker-watch {
+            background: var(--rc-amber);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .marker-alert {
+            background: var(--rc-red);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            box-shadow: 0 0 0 4px var(--rc-red-glow);
+            animation: pulse-marker 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse-marker {
+            0%,
+            100% {
+                box-shadow: 0 0 0 4px var(--rc-red-glow);
+            }
+            50% {
+                box-shadow: 0 0 0 10px var(--rc-red-glow);
+            }
+        }
+
+        .leaflet-popup-content {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            color: var(--rc-ink);
+        }
+        .leaflet-popup-content strong {
+            color: var(--rc-navy);
+        }
+
+        .detail-card h3 {
+            font-family: 'Source Serif 4', serif;
+            font-size: 18px;
+            margin: 0 0 14px;
+            color: var(--rc-navy);
+        }
+        .detail-card h3 .loc-name {
+            color: var(--rc-red);
+        }
+        .kv {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--rc-line);
+            font-size: 13px;
+        }
+        .kv:last-child {
+            border-bottom: none;
+        }
+        .kv .k {
+            color: var(--rc-ink-soft);
+        }
+        .kv .v {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .panel-row {
+            display: grid;
+            grid-template-columns: 1.1fr 1.6fr;
+            gap: 18px;
+        }
+        @media (max-width: 820px) {
+            .panel-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .filter-row .pill {
+            font-size: 12px;
+            padding: 6px 14px;
+        }
+
+        .feed-item {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--rc-line);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .feed-item:last-child {
+            border-bottom: none;
+        }
+        .feed-flag {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+        .feed-flag.outbreak {
+            background: var(--rc-red);
+        }
+        .feed-flag.issue {
+            background: var(--rc-amber);
+        }
+        .feed-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .feed-title {
+            font-size: 13.5px;
+            font-weight: 600;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+        }
+        .feed-sub {
+            font-size: 12px;
+            color: var(--rc-ink-soft);
+            margin-top: 3px;
+        }
+        .feed-detail {
+            font-size: 13px;
+            color: var(--rc-ink-soft);
+            margin-top: 6px;
+            line-height: 1.55;
+        }
+        .feed-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 9px;
+            flex-wrap: wrap;
+        }
+        .mini-btn {
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid var(--rc-line);
+            background: var(--rc-white);
+            padding: 4px 11px;
+            border-radius: 7px;
+            cursor: pointer;
+            color: var(--rc-ink-soft);
+            font-family: inherit;
+            transition: all 0.12s;
+        }
+        .mini-btn:hover {
+            border-color: var(--rc-red);
+            color: var(--rc-red);
+            background: var(--rc-red-light);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 32px 12px;
+            color: var(--rc-ink-soft);
+            font-size: 13.5px;
+        }
+
+        #feed-list {
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        #feed-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        #feed-list::-webkit-scrollbar-track {
+            background: var(--rc-navy-light);
+            border-radius: 4px;
+        }
+        #feed-list::-webkit-scrollbar-thumb {
+            background: var(--rc-line);
+            border-radius: 4px;
+        }
+
+        .leaflet-control-attribution {
+            font-size: 9px !important;
+            color: var(--rc-ink-soft) !important;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            padding: 28px 0 8px;
+            margin-top: 28px;
+            border-top: 2px solid var(--rc-line);
+            font-size: 14px;
+            color: var(--rc-ink-soft);
+        }
+        .footer strong {
+            color: var(--rc-navy);
+        }
+
+        /* ===== PASSWORD MODAL ===== */
+        #password-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        #password-modal .modal-box {
+            background: var(--rc-white);
+            border-radius: var(--radius);
+            padding: 30px 35px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        #password-modal .modal-box h3 {
+            margin-top: 0;
+            font-family: 'Source Serif 4', serif;
+            color: var(--rc-navy);
+        }
+        #password-modal .modal-box p {
+            font-size: 14px;
+            color: var(--rc-ink-soft);
+            margin-bottom: 18px;
+        }
+        #password-modal .modal-box input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--rc-line);
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        #password-modal .modal-box input:focus {
+            border-color: var(--rc-red);
+            box-shadow: 0 0 0 3px var(--rc-red-glow);
+        }
+        #password-error {
+            color: var(--rc-red);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-actions button {
+            flex: 1;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s;
+        }
+        .modal-actions .btn-cancel {
+            background: var(--rc-navy-light);
+            color: var(--rc-ink-soft);
+        }
+        .modal-actions .btn-cancel:hover {
+            background: var(--rc-line);
+        }
+        .modal-actions .btn-unlock {
+            flex: 2;
+            background: var(--rc-red);
+            color: white;
+        }
+        .modal-actions .btn-unlock:hover {
+            background: var(--rc-red-deep);
+        }
+
+        .app[dir="rtl"] #password-modal .modal-box {
+            text-align: right;
+        }
+        .app[dir="rtl"] .modal-actions {
+            flex-direction: row-reverse;
+        }
+    </style>
+</head>
+<body>
+    <div class="app" id="app" dir="ltr">
+
+        <!-- ===== TOPBAR ===== -->
+        <div class="topbar">
+            <div class="brand">
+                <img src="SRCS.jpg" alt="SRCS logo" />
+                <div class="brand-text">
+                    <h1 data-i18n="brand_title">Northern State Health Watch</h1>
+                    <p data-i18n="brand_sub">Sudanese Red Crescent Society — <span>Northern State Branch</span></p>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <div class="lang-toggle">
+                    <button id="lang-en" class="active" onclick="setLanguage('en')">EN</button>
+                    <button id="lang-ar" onclick="setLanguage('ar')">ع</button>
+                </div>
+                <div class="role-switch">
+                    <button id="btn-coord" class="active" onclick="setRole('coord')" data-i18n="role_coord">Coordinator</button>
+                    <button id="btn-dir" onclick="setRole('dir')" data-i18n="role_dir">Director dashboard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== COORDINATOR VIEW ===================== -->
+        <div class="view active" id="view-coord">
+            <div class="coord-wrap">
+                <div class="coord-head">
+                    <h2 data-i18n="coord_title">Submit a <em>report</em></h2>
+                    <p class="muted" data-i18n="coord_desc">Report a suspected outbreak or a health-service issue from your locality. The branch director sees this immediately.</p>
+                </div>
+
+                <div class="success-banner" id="success-banner">
+                    <span class="check">✓</span>
+                    <span id="success-text" data-i18n="success_default">Report submitted.</span>
+                </div>
+
+                <div class="card">
+                    <div class="field">
+                        <label class="field-label" data-i18n="field_locality">Your locality</label>
+                        <select id="f-locality">
+                            <option value="" data-i18n="select_locality">Select locality…</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" data-i18n="field_type">Report type</label>
+                        <div class="pill-row" id="f-type">
+                            <button type="button" class="pill danger active" data-val="outbreak" onclick="selectPill(this,'f-type')" data-i18n="type_outbreak">Suspected outbreak / disease alert</button>
+                            <button type="button" class="pill" data-val="issue" onclick="selectPill(this,'f-type')" data-i18n="type_issue">Health service issue</button>
+                        </div>
+                    </div>
+
+                    <div class="field" id="category-field">
+                        <label class="field-label" data-i18n="field_category">Category</label>
+                        <select id="f-category"></select>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" data-i18n="field_severity">Severity</label>
+                        <div class="severity-row" id="f-severity">
+                            <button type="button" class="pill" data-val="low" onclick="selectPill(this,'f-severity')" data-i18n="sev_low">Low</button>
+                            <button type="button" class="pill active" data-val="medium" onclick="selectPill(this,'f-severity')" data-i18n="sev_medium">Medium</button>
+                            <button type="button" class="pill danger" data-val="high" onclick="selectPill(this,'f-severity')" data-i18n="sev_high">High / urgent</button>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" data-i18n="field_place">Affected facility or village (optional)</label>
+                        <input type="text" id="f-place" data-i18n-placeholder="place_placeholder" placeholder="e.g. Dongola rural hospital, Al-Khandaq village" />
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" data-i18n="field_affected">Number of people affected (estimate, if applicable)</label>
+                        <input type="text" id="f-affected" data-i18n-placeholder="affected_placeholder" placeholder="e.g. 12 suspected cases" />
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" data-i18n="field_details">Details</label>
+                        <textarea id="f-details" data-i18n-placeholder="details_placeholder" placeholder="Describe what you're seeing: symptoms, onset date, supply shortage, facility problem, etc."></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" data-i18n="field_name">Your name</label>
+                        <input type="text" id="f-name" data-i18n-placeholder="name_placeholder" placeholder="Locality health coordinator name" />
+                    </div>
+
+                    <button class="submit-btn" id="submit-btn" onclick="submitReport()" data-i18n="submit_btn">Submit report</button>
+                    <p class="hint" data-i18n="submit_hint">Reports are shared with the Northern State health director and saved to the shared dashboard.</p>
+                </div>
+
+                <div class="my-reports">
+                    <p class="section-label" data-i18n="recent_label">Recent reports from your locality</p>
+                    <div class="card" id="my-reports-list">
+                        <div class="empty-state" data-i18n="no_reports">No reports yet. Submitted reports for your locality will appear here.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== DIRECTOR VIEW ===================== -->
+        <div class="view" id="view-dir">
+
+            <!-- Stats -->
+            <div class="dash-grid" id="stat-grid"></div>
+
+            <!-- Map + detail panel -->
+            <div class="map-section">
+                <div class="map-wrapper">
+                    <div id="map"></div>
+                    <div class="map-loading" id="map-loading" data-i18n="map_loading">Loading map data…</div>
+                </div>
+                <div class="detail-card card" id="detail-card">
+                    <h3 data-i18n="state_overview">State overview</h3>
+                    <p class="muted" style="font-size:13px;line-height:1.6;" data-i18n="state_overview_desc">Select a locality marker on the map to see its open issues, or review the full feed below. Reports submitted by coordinators sync here automatically.</p>
+                    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                        <span style="font-size:12px;background:var(--rc-green-light);padding:4px 10px;border-radius:999px;" data-i18n="status_ok">🟢 OK</span>
+                        <span style="font-size:12px;background:var(--rc-amber-light);padding:4px 10px;border-radius:999px;" data-i18n="status_watch">🟡 Watch</span>
+                        <span style="font-size:12px;background:var(--rc-red-light);padding:4px 10px;border-radius:999px;" data-i18n="status_alert">🔴 Alert</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed -->
+            <div class="card">
+                <div class="filter-row">
+                    <button type="button" class="pill active" data-val="all" onclick="setFeedFilter(this,'all')" data-i18n="filter_all">All</button>
+                    <button type="button" class="pill danger" data-val="outbreak" onclick="setFeedFilter(this,'outbreak')" data-i18n="filter_outbreak">Outbreak alerts</button>
+                    <button type="button" class="pill" data-val="open" onclick="setFeedFilter(this,'open')" data-i18n="filter_open">Open only</button>
+                </div>
+                <div id="feed-list"></div>
+            </div>
+
+        </div>
+
+        <!-- ===== FOOTER ===== -->
+        <div class="footer">
+            <span class="footer-text" data-i18n="footer_text">Web designed by <strong>Dr. Thoraya S.M. Sidahmed</strong>, Branch Health Director.</span>
+        </div>
+
+    </div>
+    <!-- end .app -->
+
+    <!-- ===== PASSWORD MODAL ===== -->
+    <div id="password-modal">
+        <div class="modal-box">
+            <h3 data-i18n="password_title">Director Access</h3>
+            <p data-i18n="password_desc">Enter the branch director password to continue.</p>
+            <input type="password" id="password-input" placeholder="••••••••" />
+            <div id="password-error" data-i18n="password_error">Incorrect password. Try again.</div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="password-cancel" data-i18n="password_cancel">Cancel</button>
+                <button class="btn-unlock" id="password-submit" data-i18n="password_submit">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS & JSZip -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+    </script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
+    </script>
+
+    <script>
+        // ============================================================
+        // FIREBASE CONFIG
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDezdUmhF10T5xorAU3JN0rZi-BH6J20tY",
+            authDomain: "northern-health-watch-52de2.firebaseapp.com",
+            projectId: "northern-health-watch-52de2",
+            storageBucket: "northern-health-watch-52de2.firebasestorage.app",
+            messagingSenderId: "154494182199",
+            appId: "1:154494182199:web:2f6b1336059fa13749f0b2"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const reportsCollection = db.collection('reports');
+
+        // ============================================================
+        // TRANSLATIONS
+        // ============================================================
+        const TRANSLATIONS = {
+            en: {
+                brand_title: 'Northern State Health Watch',
+                brand_sub: 'Sudanese Red Crescent Society — <span>Northern State Branch</span>',
+                role_coord: 'Coordinator',
+                role_dir: 'Director dashboard',
+                coord_title: 'Submit a <em>report</em>',
+                coord_desc: 'Report a suspected outbreak or a health-service issue from your locality. The branch director sees this immediately.',
+                field_locality: 'Your locality',
+                select_locality: 'Select locality…',
+                field_type: 'Report type',
+                type_outbreak: 'Suspected outbreak / disease alert',
+                type_issue: 'Health service issue',
+                field_category: 'Category',
+                field_severity: 'Severity',
+                sev_low: 'Low',
+                sev_medium: 'Medium',
+                sev_high: 'High / urgent',
+                field_place: 'Affected facility or village (optional)',
+                place_placeholder: 'e.g. Dongola rural hospital, Al-Khandaq village',
+                field_affected: 'Number of people affected (estimate, if applicable)',
+                affected_placeholder: 'e.g. 12 suspected cases',
+                field_details: 'Details',
+                details_placeholder: 'Describe what you\'re seeing: symptoms, onset date, supply shortage, facility problem, etc.',
+                field_name: 'Your name',
+                name_placeholder: 'Locality health coordinator name',
+                submit_btn: 'Submit report',
+                submit_hint: 'Reports are shared with the Northern State health director and saved to the shared dashboard.',
+                recent_label: 'Recent reports from your locality',
+                no_reports: 'No reports yet. Submitted reports for your locality will appear here.',
+                success_default: 'Report submitted.',
+                success_outbreak: 'Outbreak alert submitted — director notified.',
+                success_issue: 'Issue submitted to the director.',
+                state_overview: 'State overview',
+                state_overview_desc: 'Select a locality marker on the map to see its open issues, or review the full feed below. Reports submitted by coordinators sync here automatically.',
+                status_ok: '🟢 OK',
+                status_watch: '🟡 Watch',
+                status_alert: '🔴 Alert',
+                filter_all: 'All',
+                filter_outbreak: 'Outbreak alerts',
+                filter_open: 'Open only',
+                map_loading: 'Loading map data…',
+                stat_total: 'Total reports',
+                stat_open: 'Open / in progress',
+                stat_outbreaks: 'Active outbreak alerts',
+                stat_localities: 'Localities with open items',
+                stat_selected: 'Selected locality',
+                detail_open_items: 'Open items',
+                detail_outbreaks_all: 'Outbreak alerts (all time)',
+                detail_total: 'Total reports',
+                detail_last: 'Last report',
+                detail_open_issues: 'Open issues:',
+                detail_clear: 'Clear selection',
+                status_open: 'Open',
+                status_progress: 'In progress',
+                status_resolved: 'Resolved',
+                action_progress: 'Mark in progress',
+                action_resolved: 'Mark resolved',
+                action_reopen: 'Reopen',
+                popup_open_issues: 'open issue',
+                popup_open_issues_plural: 'open issues',
+                popup_status_ok: '✅ OK',
+                popup_status_watch: '⚠️ Watch',
+                popup_status_alert: '🚨 Alert',
+                popup_view_details: 'View details',
+                connection_error: 'Connection problem — check your internet connection.',
+                no_feed: 'No reports match this filter yet.',
+                affected_label: 'Affected:',
+                cat_acute_watery: 'Acute watery diarrhea / cholera-like',
+                cat_measles: 'Measles-like rash & fever',
+                cat_meningitis: 'Suspected meningitis',
+                cat_malaria: 'Malaria surge',
+                cat_fever: 'Unexplained fever cluster',
+                cat_other_outbreak: 'Other suspected outbreak',
+                cat_supply: 'Medicine / supply shortage',
+                cat_equipment: 'Equipment failure',
+                cat_staffing: 'Staffing shortage',
+                cat_facility: 'Facility / infrastructure damage',
+                cat_coldchain: 'Vaccine cold-chain issue',
+                cat_water: 'Water or sanitation problem',
+                cat_other_issue: 'Other service issue',
+                loc_Halfa: 'Halfa',
+                loc_Alburgaig: 'Alburgaig',
+                loc_Delgo: 'Delgo',
+                loc_Merewie: 'Merewie',
+                loc_Algoled: 'Algoled',
+                loc_Alddabah: 'Alddabah',
+                loc_Dongola: 'Dongola',
+                footer_text: 'Web designed by <strong>Dr. Thoraya S.M. Sidahmed</strong>, Branch Health Director.',
+                password_title: 'Director Access',
+                password_desc: 'Enter the branch director password to continue.',
+                password_error: 'Incorrect password. Try again.',
+                password_cancel: 'Cancel',
+                password_submit: 'Unlock',
+            },
+            ar: {
+                brand_title: 'المرصد الصحي لولاية الشمالية',
+                brand_sub: 'الهلال الأحمر السوداني — <span>فرع ولاية الشمالية</span>',
+                role_coord: 'منسق',
+                role_dir: 'لوحة المدير',
+                coord_title: 'تقديم <em>تقرير</em>',
+                coord_desc: 'أبلغ عن تفشي محتمل أو مشكلة في الخدمات الصحية من محليتك. يرى مدير الفرع هذا فوراً.',
+                field_locality: 'محليتك',
+                select_locality: 'اختر المحلية…',
+                field_type: 'نوع التقرير',
+                type_outbreak: 'تنبيه تفشي محتمل / مرض',
+                type_issue: 'مشكلة في الخدمات الصحية',
+                field_category: 'التصنيف',
+                field_severity: 'الخطورة',
+                sev_low: 'منخفض',
+                sev_medium: 'متوسط',
+                sev_high: 'مرتفع / عاجل',
+                field_place: 'المنشأة أو القرية المتضررة (اختياري)',
+                place_placeholder: 'مثال: مستشفى دنقلا الريفي، قرية الخندق',
+                field_affected: 'عدد الأشخاص المتضررين (تقديري، إن أمكن)',
+                affected_placeholder: 'مثال: 12 حالة مشتبه بها',
+                field_details: 'التفاصيل',
+                details_placeholder: 'صف ما تراه: الأعراض، تاريخ البدء، نقص الإمدادات، مشكلة في المنشأة، إلخ.',
+                field_name: 'اسمك',
+                name_placeholder: 'اسم منسق الصحة بالمحلية',
+                submit_btn: 'إرسال التقرير',
+                submit_hint: 'يتم مشاركة التقارير مع مدير الصحة بولاية الشمالية وحفظها في لوحة المعلومات المشتركة.',
+                recent_label: 'التقارير الأخيرة من محليتك',
+                no_reports: 'لا توجد تقارير بعد. ستظهر التقارير المقدمة من محليتك هنا.',
+                success_default: 'تم إرسال التقرير.',
+                success_outbreak: 'تم إرسال تنبيه التفشي — تم إخطار المدير.',
+                success_issue: 'تم إرسال المشكلة إلى المدير.',
+                state_overview: 'نظرة عامة على الولاية',
+                state_overview_desc: 'حدد علامة محلية على الخريطة لرؤية المشكلات المفتوحة، أو راجع التغذية الكاملة أدناه. يتم مزامنة التقارير المقدمة من المنسقين هنا تلقائياً.',
+                status_ok: '🟢 جيد',
+                status_watch: '🟡 مراقبة',
+                status_alert: '🔴 تنبيه',
+                filter_all: 'الكل',
+                filter_outbreak: 'تنبيهات التفشي',
+                filter_open: 'المفتوحة فقط',
+                map_loading: 'جاري تحميل بيانات الخريطة…',
+                stat_total: 'إجمالي التقارير',
+                stat_open: 'مفتوحة / قيد المعالجة',
+                stat_outbreaks: 'تنبيهات التفشي النشطة',
+                stat_localities: 'المحليات ذات المشكلات المفتوحة',
+                stat_selected: 'المحلية المختارة',
+                detail_open_items: 'العناصر المفتوحة',
+                detail_outbreaks_all: 'تنبيهات التفشي (على الإطلاق)',
+                detail_total: 'إجمالي التقارير',
+                detail_last: 'آخر تقرير',
+                detail_open_issues: 'المشكلات المفتوحة:',
+                detail_clear: 'إلغاء التحديد',
+                status_open: 'مفتوحة',
+                status_progress: 'قيد المعالجة',
+                status_resolved: 'تم الحل',
+                action_progress: 'وضع قيد المعالجة',
+                action_resolved: 'وضع كحل',
+                action_reopen: 'إعادة فتح',
+                popup_open_issues: 'مشكلة مفتوحة',
+                popup_open_issues_plural: 'مشكلات مفتوحة',
+                popup_status_ok: '✅ جيد',
+                popup_status_watch: '⚠️ مراقبة',
+                popup_status_alert: '🚨 تنبيه',
+                popup_view_details: 'عرض التفاصيل',
+                connection_error: 'مشكلة في الاتصال — تحقق من اتصالك بالإنترنت.',
+                no_feed: 'لا توجد تقارير تطابق هذا الفلتر حتى الآن.',
+                affected_label: 'المتضررون:',
+                cat_acute_watery: 'إسهال مائي حاد / يشبه الكوليرا',
+                cat_measles: 'طفح جلدي وحمى يشبه الحصبة',
+                cat_meningitis: 'اشتباه بالتهاب السحايا',
+                cat_malaria: 'ارتفاع في الملاريا',
+                cat_fever: 'مجموعة حمى غير مفسرة',
+                cat_other_outbreak: 'تفشي مشتبه به آخر',
+                cat_supply: 'نقص الأدوية / الإمدادات',
+                cat_equipment: 'عطل في المعدات',
+                cat_staffing: 'نقص الكوادر',
+                cat_facility: 'تلف في المنشأة / البنية التحتية',
+                cat_coldchain: 'مشكلة في سلسلة التبريد للقاحات',
+                cat_water: 'مشكلة في المياه أو الصرف الصحي',
+                cat_other_issue: 'مشكلة خدمية أخرى',
+                loc_Halfa: 'حلفا',
+                loc_Alburgaig: 'البرقيق',
+                loc_Delgo: 'دلقو',
+                loc_Merewie: 'مروي',
+                loc_Algoled: 'الجليد',
+                loc_Alddabah: 'الدبة',
+                loc_Dongola: 'دنقلا',
+                footer_text: 'صمم الموقع <strong>ثريا صلاح مرتضى سيدأحمد</strong>، مدير الصحة بالفرع.',
+                password_title: 'دخول المدير',
+                password_desc: 'أدخل كلمة مرور مدير الفرع للمتابعة.',
+                password_error: 'كلمة المرور غير صحيحة. حاول مرة أخرى.',
+                password_cancel: 'إلغاء',
+                password_submit: 'فتح',
+            }
+        };
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let currentLang = 'en';
+        let state = {
+            reports: [],
+            currentType: 'outbreak',
+            currentSeverity: 'medium',
+            feedFilter: 'all',
+            selectedLocality: null
+        };
+        let map = null;
+        let markerLayer = null;
+        let boundaryLayer = null;
+        let mapLoaded = false;
+
+        // ============================================================
+        // TRANSLATION HELPERS
+        // ============================================================
+        function t(key) {
+            const val = TRANSLATIONS[currentLang]?.[key];
+            return val !== undefined && val !== null ? val : key;
+        }
+
+        function tCategory(cat) {
+            const map = {
+                'Acute watery diarrhea / cholera-like': 'cat_acute_watery',
+                'Measles-like rash & fever': 'cat_measles',
+                'Suspected meningitis': 'cat_meningitis',
+                'Malaria surge': 'cat_malaria',
+                'Unexplained fever cluster': 'cat_fever',
+                'Other suspected outbreak': 'cat_other_outbreak',
+                'Medicine / supply shortage': 'cat_supply',
+                'Equipment failure': 'cat_equipment',
+                'Staffing shortage': 'cat_staffing',
+                'Facility / infrastructure damage': 'cat_facility',
+                'Vaccine cold-chain issue': 'cat_coldchain',
+                'Water or sanitation problem': 'cat_water',
+                'Other service issue': 'cat_other_issue',
+            };
+            return t(map[cat] || cat);
+        }
+
+        function tLocality(loc) {
+            return t('loc_' + loc) || loc;
+        }
+
+        function tStatus(status) {
+            const map = {
+                'open': 'status_open',
+                'progress': 'status_progress',
+                'resolved': 'status_resolved'
+            };
+            return t(map[status] || status);
+        }
+
+        function tStatusClass(status) {
+            const map = {
+                'open': 'status-open',
+                'progress': 'status-progress',
+                'resolved': 'status-resolved'
+            };
+            return map[status] || 'status-open';
+        }
+
+        // ============================================================
+        // LANGUAGE SWITCH
+        // ============================================================
+        function setLanguage(lang) {
+            if (lang === currentLang) return;
+            currentLang = lang;
+
+            document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+            document.getElementById('lang-ar').classList.toggle('active', lang === 'ar');
+
+            const app = document.getElementById('app');
+            app.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+
+            applyStaticTranslations();
+            renderMyReports();
+            if (document.getElementById('view-dir').classList.contains('active')) {
+                renderDashboard();
+                if (mapLoaded) updateMapMarkers();
+            }
+            populateCategory();
+            populateLocalitySelect();
+            updatePlaceholders();
+        }
+
+        function applyStaticTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const val = t(key);
+                if (val) {
+                    if (val.includes('<')) {
+                        el.innerHTML = val;
+                    } else {
+                        el.textContent = val;
+                    }
+                }
+            });
+            const brandSub = document.querySelector('.brand-text p');
+            if (brandSub) brandSub.innerHTML = t('brand_sub');
+            const coordTitle = document.querySelector('.coord-head h2');
+            if (coordTitle) coordTitle.innerHTML = t('coord_title');
+        }
+
+        function updatePlaceholders() {
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                el.setAttribute('placeholder', t(key));
+            });
+        }
+
+        // ============================================================
+        // FIREBASE LISTENER
+        // ============================================================
+        function startReportsListener() {
+            reportsCollection.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+                state.reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderMyReports();
+                if (document.getElementById('view-dir').classList.contains('active')) {
+                    renderDashboard();
+                    if (mapLoaded) updateMapMarkers();
+                }
+            }, (err) => {
+                console.error('Firestore listener error:', err);
+                showConnectionError();
+            });
+        }
+
+        async function addReportRemote(report) {
+            await reportsCollection.add(report);
+        }
+
+        async function updateReportRemote(id, fields) {
+            await reportsCollection.doc(id).update(fields);
+        }
+
+        function showConnectionError() {
+            const banner = document.getElementById('success-banner');
+            if (!banner) return;
+            banner.classList.add('show');
+            banner.style.background = 'var(--rc-red-light)';
+            document.getElementById('success-text').textContent = t('connection_error');
+        }
+
+        // ============================================================
+        // UI HELPERS
+        // ============================================================
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        function formatDate(iso) {
+            const d = new Date(iso);
+            const opts = { month: 'short', day: 'numeric' };
+            const timeOpts = { hour: '2-digit', minute: '2-digit' };
+            if (currentLang === 'ar') {
+                return d.toLocaleDateString('ar', opts) + ' ' + d.toLocaleTimeString('ar', timeOpts);
+            }
+            return d.toLocaleDateString(undefined, opts) + ' ' + d.toLocaleTimeString(undefined, timeOpts);
+        }
+
+        function statusTag(status) {
+            const label = tStatus(status);
+            const cls = tStatusClass(status);
+            return `<span class="status-tag ${cls}">${label}</span>`;
+        }
+
+        // ============================================================
+        // COORDINATOR
+        // ============================================================
+        function populateLocalitySelect() {
+            const sel = document.getElementById('f-locality');
+            const currentVal = sel.value;
+            sel.innerHTML = '';
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = t('select_locality');
+            sel.appendChild(opt);
+            LOCALITIES.forEach(loc => {
+                const o = document.createElement('option');
+                o.value = loc;
+                o.textContent = tLocality(loc);
+                sel.appendChild(o);
+            });
+            if (currentVal) sel.value = currentVal;
+        }
+
+        function populateCategory() {
+            const sel = document.getElementById('f-category');
+            const currentVal = sel.value;
+            sel.innerHTML = '';
+            const cats = CATEGORY_OPTIONS[state.currentType] || [];
+            cats.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c;
+                o.textContent = tCategory(c);
+                sel.appendChild(o);
+            });
+            if (currentVal) {
+                const exists = Array.from(sel.options).some(opt => opt.value === currentVal);
+                if (exists) sel.value = currentVal;
+            }
+        }
+
+        function selectPill(btn, groupId) {
+            const group = document.getElementById(groupId);
+            [...group.children].forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            if (groupId === 'f-type') {
+                state.currentType = btn.dataset.val;
+                populateCategory();
+            }
+            if (groupId === 'f-severity') {
+                state.currentSeverity = btn.dataset.val;
+            }
+        }
+
+        async function submitReport() {
+            const locality = document.getElementById('f-locality').value;
+            const name = document.getElementById('f-name').value.trim();
+            if (!locality) { alert(t('select_locality')); return; }
+            if (!name) { alert(t('field_name')); return; }
+
+            const report = {
+                locality,
+                type: state.currentType,
+                category: document.getElementById('f-category').value,
+                severity: state.currentSeverity,
+                place: document.getElementById('f-place').value.trim(),
+                affected: document.getElementById('f-affected').value.trim(),
+                details: document.getElementById('f-details').value.trim(),
+                reporter: name,
+                status: 'open',
+                createdAt: new Date().toISOString()
+            };
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = t('submit_btn') + '…';
+
+            try {
+                await addReportRemote(report);
+                const banner = document.getElementById('success-banner');
+                document.getElementById('success-text').textContent =
+                    report.type === 'outbreak' ? t('success_outbreak') : t('success_issue');
+                banner.classList.add('show');
+                setTimeout(() => banner.classList.remove('show'), 4000);
+                document.getElementById('f-place').value = '';
+                document.getElementById('f-affected').value = '';
+                document.getElementById('f-details').value = '';
+            } catch (err) {
+                console.error('Submit failed:', err);
+                alert(t('connection_error'));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = t('submit_btn');
+            }
+        }
+
+        function renderMyReports() {
+            const sel = document.getElementById('f-locality').value;
+            const list = document.getElementById('my-reports-list');
+            const relevant = sel ? state.reports.filter(r => r.locality === sel) : state.reports;
+            if (relevant.length === 0) {
+                list.innerHTML = `<div class="empty-state">${t('no_reports')}</div>`;
+                return;
+            }
+            list.innerHTML = relevant.slice(0, 8).map(r => `
+                    <div class="report-row">
+                        <div>
+                            <div style="font-size:13.5px;font-weight:600;">${escapeHtml(tCategory(r.category))}</div>
+                            <div class="report-meta">${tLocality(r.locality)} · ${formatDate(r.createdAt)} · ${escapeHtml(r.reporter)}</div>
+                        </div>
+                        ${statusTag(r.status)}
+                    </div>
+                `).join('');
+        }
+
+        document.getElementById('f-locality').addEventListener('change', renderMyReports);
+
+        // ============================================================
+        // ROLE SWITCH (with password protection)
+        // ============================================================
+        const PASSWORD = '1956@SRCS';
+        let pendingRole = null;
+
+        function showPasswordModal(role) {
+            pendingRole = role;
+            const modal = document.getElementById('password-modal');
+            modal.style.display = 'flex';
+            document.getElementById('password-input').value = '';
+            document.getElementById('password-error').style.display = 'none';
+            document.getElementById('password-input').focus();
+        }
+
+        function hidePasswordModal() {
+            document.getElementById('password-modal').style.display = 'none';
+            // Do NOT clear pendingRole here; we need it after modal closes
+        }
+
+        function attemptPassword() {
+            const input = document.getElementById('password-input').value;
+            if (input === PASSWORD) {
+                // Store the pending role before hiding
+                const roleToSwitch = pendingRole;
+                hidePasswordModal();
+                if (roleToSwitch) {
+                    performRoleSwitch(roleToSwitch);
+                    pendingRole = null; // clear after switching
+                }
+            } else {
+                document.getElementById('password-error').style.display = 'block';
+                document.getElementById('password-input').value = '';
+                document.getElementById('password-input').focus();
+            }
+        }
+
+        function performRoleSwitch(role) {
+            document.getElementById('btn-coord').classList.toggle('active', role === 'coord');
+            document.getElementById('btn-dir').classList.toggle('active', role === 'dir');
+            document.getElementById('view-coord').classList.toggle('active', role === 'coord');
+            document.getElementById('view-dir').classList.toggle('active', role === 'dir');
+            if (role === 'dir') {
+                renderDashboard();
+                if (!mapLoaded) initMap();
+                else updateMapMarkers();
+            }
+        }
+
+        // Main setRole function with password check
+        function setRole(role) {
+            if (role === 'dir') {
+                showPasswordModal(role);
+            } else {
+                performRoleSwitch(role);
+            }
+        }
+
+        // Wire up modal buttons
+        document.getElementById('password-submit').addEventListener('click', attemptPassword);
+        document.getElementById('password-cancel').addEventListener('click', function() {
+            hidePasswordModal();
+            pendingRole = null; // reset pending
+            performRoleSwitch('coord'); // revert to coordinator
+        });
+        document.getElementById('password-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                attemptPassword();
+            }
+        });
+
+        // ============================================================
+        // DIRECTOR — MAP
+        // ============================================================
+        async function initMap() {
+            if (mapLoaded) return;
+            const container = document.getElementById('map');
+            if (!container) return;
+
+            map = L.map('map', {
+                center: [19.5, 30.5],
+                zoom: 7,
+                zoomControl: true,
+                fadeAnimation: true,
+                attributionControl: true
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; CartoDB',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            const loading = document.getElementById('map-loading');
+            loading.classList.remove('hidden');
+
+            try {
+                const zipUrl =
+                    'https://data.humdata.org/dataset/a66a4b6c-92de-4507-9546-aa1900474180/resource/018af991-4aa7-4043-a0d5-e429a55851fb/download/sdn_admin_boundaries.geojson.zip';
+                const response = await fetch(zipUrl);
+                if (!response.ok) throw new Error('Failed to fetch boundaries');
+                const blob = await response.blob();
+                const zip = await JSZip.loadAsync(blob);
+                let geojsonFile = null;
+                for (let filename of Object.keys(zip.files)) {
+                    if (filename.endsWith('.geojson') || filename.endsWith('.json')) {
+                        geojsonFile = zip.files[filename];
+                        break;
+                    }
+                }
+                if (!geojsonFile) throw new Error('No GeoJSON file found in zip');
+                const geojsonText = await geojsonFile.async('text');
+                const geojsonData = JSON.parse(geojsonText);
+                let northernFeature = null;
+                if (geojsonData.features) {
+                    for (let feat of geojsonData.features) {
+                        const props = feat.properties;
+                        if (!props) continue;
+                        const nameEn = props['name:en'] || props['name'] || '';
+                        const nameAr = props['name:ar'] || '';
+                        if (nameEn.toLowerCase().includes('northern') || nameAr.includes('الشمالية')) {
+                            northernFeature = feat;
+                            break;
+                        }
+                    }
+                }
+                if (northernFeature) {
+                    const northernCollection = {
+                        type: 'FeatureCollection',
+                        features: [northernFeature]
+                    };
+                    boundaryLayer = L.geoJSON(northernCollection, {
+                        style: {
+                            color: 'var(--rc-red)',
+                            weight: 2,
+                            fillColor: 'var(--rc-navy-light)',
+                            fillOpacity: 0.15
+                        },
+                        interactive: false
+                    }).addTo(map);
+                    const bounds = boundaryLayer.getBounds();
+                    if (bounds.isValid()) {
+                        map.fitBounds(bounds, { padding: [40, 40] });
+                    }
+                } else {
+                    boundaryLayer = L.geoJSON(geojsonData, {
+                        style: {
+                            color: 'var(--rc-red)',
+                            weight: 1.5,
+                            fillColor: 'var(--rc-navy-light)',
+                            fillOpacity: 0.1
+                        },
+                        interactive: false
+                    }).addTo(map);
+                    map.fitBounds(boundaryLayer.getBounds(), { padding: [40, 40] });
+                }
+            } catch (err) {
+                console.warn('Could not load boundaries, using fallback view.', err);
+            } finally {
+                loading.classList.add('hidden');
+                mapLoaded = true;
+                updateMapMarkers();
+            }
+        }
+
+        function updateMapMarkers() {
+            if (!map) return;
+            if (markerLayer) {
+                map.removeLayer(markerLayer);
+                markerLayer = null;
+            }
+            const group = L.layerGroup();
+            LOCALITIES.forEach(loc => {
+                const coords = LOC_COORDS[loc];
+                if (!coords) return;
+                const status = localityStatus(loc);
+                const count = getOpenCount(loc);
+                let markerClass = 'marker-ok';
+                if (status === 'watch') markerClass = 'marker-watch';
+                else if (status === 'alert') markerClass = 'marker-alert';
+
+                const icon = L.divIcon({
+                    className: markerClass,
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9],
+                    popupAnchor: [0, -12]
+                });
+
+                const statusLabel = status === 'ok' ? t('popup_status_ok') :
+                    status === 'watch' ? t('popup_status_watch') :
+                    t('popup_status_alert');
+                const issueLabel = count === 1 ? t('popup_open_issues') : t('popup_open_issues_plural');
+
+                const marker = L.marker(coords, { icon: icon })
+                    .bindPopup(`
+                            <strong>${tLocality(loc)}</strong><br/>
+                            ${count} ${issueLabel}<br/>
+                            ${statusLabel}
+                            <br/><button class="mini-btn" onclick="selectLocality('${loc}')" style="margin-top:4px;">${t('popup_view_details')}</button>
+                        `)
+                    .on('click', function() {
+                        selectLocality(loc);
+                    });
+                group.addLayer(marker);
+            });
+            markerLayer = group;
+            map.addLayer(group);
+        }
+
+        function localityStatus(loc) {
+            const rs = state.reports.filter(r => r.locality === loc && r.status !== 'resolved');
+            if (rs.some(r => r.type === 'outbreak' && r.severity === 'high')) return 'alert';
+            if (rs.some(r => r.type === 'outbreak')) return 'alert';
+            if (rs.some(r => r.severity === 'high')) return 'watch';
+            if (rs.length > 0) return 'watch';
+            return 'ok';
+        }
+
+        function getOpenCount(loc) {
+            return state.reports.filter(r => r.locality === loc && r.status !== 'resolved').length;
+        }
+
+        // ============================================================
+        // DIRECTOR — DASHBOARD
+        // ============================================================
+        function renderDashboard() {
+            renderStats();
+            renderDetail();
+            renderFeed();
+        }
+
+        function renderStats() {
+            const total = state.reports.length;
+            const open = state.reports.filter(r => r.status !== 'resolved').length;
+            const outbreaks = state.reports.filter(r => r.type === 'outbreak' && r.status !== 'resolved').length;
+            const localitiesAffected = new Set(state.reports.filter(r => r.status !== 'resolved').map(r => r.locality)).size;
+
+            let displayOpen = open;
+            let displayOutbreaks = outbreaks;
+            let displayLocalities = localitiesAffected;
+            let selectedLabel = t('stat_localities');
+            if (state.selectedLocality) {
+                const sel = state.selectedLocality;
+                displayOpen = state.reports.filter(r => r.locality === sel && r.status !== 'resolved').length;
+                displayOutbreaks = state.reports.filter(r => r.locality === sel && r.type === 'outbreak' && r.status !==
+                    'resolved').length;
+                displayLocalities = displayOpen > 0 ? 1 : 0;
+                selectedLabel = t('stat_selected');
+            }
+
+            document.getElementById('stat-grid').innerHTML = `
+                    <div class="stat"><div class="n">${total}</div><div class="l">${t('stat_total')}</div></div>
+                    <div class="stat"><div class="n">${displayOpen}</div><div class="l">${state.selectedLocality ? t('stat_open') + ' (' + tLocality(state.selectedLocality) + ')' : t('stat_open')}</div></div>
+                    <div class="stat ${displayOutbreaks > 0 ? 'alert' : ''}"><div class="n">${displayOutbreaks}</div><div class="l">${state.selectedLocality ? t('stat_outbreaks') + ' (' + tLocality(state.selectedLocality) + ')' : t('stat_outbreaks')}</div></div>
+                    <div class="stat"><div class="n">${displayLocalities}${state.selectedLocality ? '' : ' / 7'}</div><div class="l">${selectedLabel}</div></div>
+                `;
+        }
+
+        function renderDetail() {
+            const card = document.getElementById('detail-card');
+            if (!state.selectedLocality) {
+                let chips = LOCALITIES.map(loc => {
+                    const st = localityStatus(loc);
+                    const dot = st === 'ok' ? '🟢' : st === 'watch' ? '🟡' : '🔴';
+                    return `<span style="font-size:12px;background:var(--rc-navy-light);padding:4px 10px;border-radius:999px;cursor:pointer;" onclick="selectLocality('${loc}')">${dot} ${tLocality(loc)}</span>`;
+                }).join('');
+                card.innerHTML = `
+                        <h3>${t('state_overview')}</h3>
+                        <p class="muted" style="font-size:13px;line-height:1.6;">${t('state_overview_desc')}</p>
+                        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                            ${chips}
+                        </div>
+                    `;
+                return;
+            }
+            const loc = state.selectedLocality;
+            const all = state.reports.filter(r => r.locality === loc);
+            const open = all.filter(r => r.status !== 'resolved');
+            const outbreakCount = all.filter(r => r.type === 'outbreak').length;
+            const lastReport = all[0];
+            const status = localityStatus(loc);
+            const statusLabel = status === 'ok' ? t('popup_status_ok') :
+                status === 'watch' ? t('popup_status_watch') :
+                t('popup_status_alert');
+
+            card.innerHTML = `
+                    <h3><span class="loc-name">${tLocality(loc)}</span> <span style="font-size:14px;font-weight:400;color:var(--rc-ink-soft);">${statusLabel}</span></h3>
+                    <div class="kv"><span class="k">${t('detail_open_items')}</span><span class="v">${open.length}</span></div>
+                    <div class="kv"><span class="k">${t('detail_outbreaks_all')}</span><span class="v">${outbreakCount}</span></div>
+                    <div class="kv"><span class="k">${t('detail_total')}</span><span class="v">${all.length}</span></div>
+                    <div class="kv"><span class="k">${t('detail_last')}</span><span class="v">${lastReport ? formatDate(lastReport.createdAt) : '—'}</span></div>
+                    ${open.length > 0 ? `
+                        <div style="margin-top:12px;font-size:12px;color:var(--rc-ink-soft);">
+                            <strong style="color:var(--rc-navy);">${t('detail_open_issues')}</strong>
+                            ${open.slice(0,3).map(r => `• ${escapeHtml(tCategory(r.category))}`).join(' ')}
+                            ${open.length > 3 ? `+ ${open.length - 3} ${t('detail_open_items')}` : ''}
+                        </div>
+                    ` : ''}
+                    <button class="mini-btn" style="margin-top:14px;width:100%;padding:8px;border-radius:8px;background:var(--rc-navy-light);border-color:transparent;font-weight:600;" onclick="selectLocality('${loc}')">${t('detail_clear')}</button>
+                `;
+        }
+
+        function selectLocality(loc) {
+            state.selectedLocality = (state.selectedLocality === loc) ? null : loc;
+            updateMapMarkers();
+            renderDetail();
+            renderFeed();
+            renderStats();
+        }
+
+        // ============================================================
+        // DIRECTOR — FEED
+        // ============================================================
+        function setFeedFilter(btn, val) {
+            [...btn.parentElement.children].forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            state.feedFilter = val;
+            renderFeed();
+        }
+
+        function renderFeed() {
+            let list = state.reports;
+            if (state.selectedLocality) list = list.filter(r => r.locality === state.selectedLocality);
+            if (state.feedFilter === 'outbreak') list = list.filter(r => r.type === 'outbreak');
+            if (state.feedFilter === 'open') list = list.filter(r => r.status !== 'resolved');
+
+            const el = document.getElementById('feed-list');
+            if (list.length === 0) {
+                el.innerHTML = `<div class="empty-state">${t('no_feed')}</div>`;
+                return;
+            }
+
+            el.innerHTML = list.map(r => `
+                    <div class="feed-item">
+                        <div class="feed-flag ${r.type}"></div>
+                        <div class="feed-body">
+                            <div class="feed-title">${escapeHtml(tCategory(r.category))} ${statusTag(r.status)}</div>
+                            <div class="feed-sub">${tLocality(r.locality)}${r.place ? ' · ' + escapeHtml(r.place) : ''} · ${formatDate(r.createdAt)} · ${t('field_name')}: ${escapeHtml(r.reporter)}</div>
+                            ${r.details ? `<div class="feed-detail">${escapeHtml(r.details)}</div>` : ''}
+                            ${r.affected ? `<div class="feed-detail"><strong style="font-weight:600;">${t('affected_label')}</strong> ${escapeHtml(r.affected)}</div>` : ''}
+                            <div class="feed-actions">
+                                ${r.status !== 'progress' ? `<button class="mini-btn" onclick="updateStatus('${r.id}','progress')">${t('action_progress')}</button>` : ''}
+                                ${r.status !== 'resolved' ? `<button class="mini-btn" onclick="updateStatus('${r.id}','resolved')">${t('action_resolved')}</button>` : ''}
+                                ${r.status === 'resolved' ? `<button class="mini-btn" onclick="updateStatus('${r.id}','open')">${t('action_reopen')}</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        async function updateStatus(id, status) {
+            try {
+                await updateReportRemote(id, { status });
+            } catch (err) {
+                console.error('Status update failed:', err);
+                alert(t('connection_error'));
+            }
+        }
+
+        // ============================================================
+        // DATA
+        // ============================================================
+        const LOCALITIES = ["Halfa", "Alburgaig", "Delgo", "Merewie", "Algoled", "Alddabah", "Dongola"];
+
+        const LOC_COORDS = {
+            'Halfa': [21.8, 31.2],
+            'Alburgaig': [20.9, 30.7],
+            'Delgo': [20.4, 30.6],
+            'Merewie': [19.7, 30.5],
+            'Algoled': [19.1, 30.6],
+            'Alddabah': [18.4, 30.7],
+            'Dongola': [18.0, 30.5]
+        };
+
+        const CATEGORY_OPTIONS = {
+            outbreak: [
+                "Acute watery diarrhea / cholera-like",
+                "Measles-like rash & fever",
+                "Suspected meningitis",
+                "Malaria surge",
+                "Unexplained fever cluster",
+                "Other suspected outbreak"
+            ],
+            issue: [
+                "Medicine / supply shortage",
+                "Equipment failure",
+                "Staffing shortage",
+                "Facility / infrastructure damage",
+                "Vaccine cold-chain issue",
+                "Water or sanitation problem",
+                "Other service issue"
+            ]
+        };
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        populateLocalitySelect();
+        populateCategory();
+        updatePlaceholders();
+        applyStaticTranslations();
+        startReportsListener();
+
+        document.getElementById('success-text').textContent = t('success_default');
+    </script>
+</body>
+</html>
